@@ -6,3 +6,6 @@ userspace/busybox-*/
 userspace/rootfs/
 userspace/*.tar.bz2
 userspace/initramfs.cpio.gz
+iso/boot/bzImage
+iso/boot/initramfs.cpio.gz
+leanos.iso
