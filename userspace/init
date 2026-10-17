@@ -1,0 +1,8 @@
+#!/bin/sh
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t devtmpfs none /dev
+mount -t tmpfs none /run
+mount -t tmpfs none /tmp
+echo "Welcome to LeanOS"
+exec setsid cttyhack sh
