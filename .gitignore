@@ -1,2 +1,8 @@
 kernel/src/
 build/
+kernel/src/
+kernel/build/
+userspace/busybox-*/
+userspace/rootfs/
+userspace/*.tar.bz2
+userspace/initramfs.cpio.gz
