@@ -8,3 +8,8 @@ mount -t tmpfs tmpfs /run
 mount -t tmpfs tmpfs /tmp
 hostname -F /etc/hostname
 mkdir -p /home/leanos && chown 1000:1000 /home/leanos
+
+# networking: loopback + DHCP on eth0 (runs in background)
+ip link set lo up
+ip link set eth0 up
+udhcpc -i eth0 -b -q -S
