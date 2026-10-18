@@ -10,3 +10,11 @@ iso/boot/bzImage
 iso/boot/initramfs.cpio.gz
 leanos.iso
 paused/
+leanos.img
+leanos.vmdk
+mnt/
+leanos.img
+leanos.vmdk
+mnt/
+*.vdi
+*.vmdk

@@ -1,7 +1,7 @@
 # LeanOS context
 
 Last updated: 2026-10-17
-Status: Steps 1-3 complete. Step 4 in progress (4.1-4.3 done).
+Status: Steps 1-4 complete (boots from a virtual disk). Next: package manager (APT).
 
 ## Project
 - New LeanOS project, separate from any earlier work.
@@ -26,7 +26,7 @@ Status: Steps 1-3 complete. Step 4 in progress (4.1-4.3 done).
   - [x] 4.1 BusyBox init + inittab + login + non-root user (userspace/overlay)
   - [x] 4.2 networking: DHCP on eth0 via udhcpc
   - [x] 4.3 no default passwords (LEANOS_DEV=1 for test passwords), root console login blocked
-  - 4.4 install to a virtual disk (persistent rootfs)
+  - [x] 4.4 install to disk: ext4 root on /dev/sda1 + GRUB (build-disk.sh), boots in VirtualBox
 - [ ] Later: APT + software catalogue, firewall and security, RAM tuning, kernel config trimming, custom desktop.
 
 ## Measurements
@@ -55,6 +55,9 @@ cd ~/LeanOS/userspace && ./build-initramfs.sh
 ```
 
 ## Resume point
-Next: Step 4.4 (install to a virtual disk).
+Next: Step 5 (package management).
 - VM network adapter must be Intel PRO/1000 MT Desktop (82540EM) on NAT; the kernel has e1000 built in but not PCnet.
 - BusyBox wget does not verify TLS certificates; use only for testing until APT is available.
+- Disk workflow: build-initramfs.sh -> build-disk.sh (leanos.img) -> VBoxManage convertfromraw to leanos-disk.vdi, attached on the AHCI controller. VM: 1024 MB, EFI off, audio off, Intel PRO/1000 NIC, Hard Disk first in boot order.
+- Measured: VirtualBox 1024 MB VM, ext4 root on disk, init + login + DHCP: 16 MB used, 32 MB of disk used.
+- Normal users cannot poweroff (needs root); add sudo/doas later.
