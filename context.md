@@ -1,7 +1,7 @@
 # LeanOS context
 
 Last updated: 2026-10-17
-Status: Steps 1-3 complete. Step 4 in progress (4.1, 4.2 done).
+Status: Steps 1-3 complete. Step 4 in progress (4.1-4.3 done).
 
 ## Project
 - New LeanOS project, separate from any earlier work.
@@ -25,7 +25,7 @@ Status: Steps 1-3 complete. Step 4 in progress (4.1, 4.2 done).
 - [ ] Step 4 (IN PROGRESS): real system.
   - [x] 4.1 BusyBox init + inittab + login + non-root user (userspace/overlay)
   - [x] 4.2 networking: DHCP on eth0 via udhcpc
-  - 4.3 users/permissions cleanup (replace test passwords)
+  - [x] 4.3 no default passwords (LEANOS_DEV=1 for test passwords), root console login blocked
   - 4.4 install to a virtual disk (persistent rootfs)
 - [ ] Later: APT + software catalogue, firewall and security, RAM tuning, kernel config trimming, custom desktop.
 
@@ -55,6 +55,6 @@ cd ~/LeanOS/userspace && ./build-initramfs.sh
 ```
 
 ## Resume point
-Next: Step 4.3 (password handling), then 4.4 (install to a virtual disk).
+Next: Step 4.4 (install to a virtual disk).
 - VM network adapter must be Intel PRO/1000 MT Desktop (82540EM) on NAT; the kernel has e1000 built in but not PCnet.
 - BusyBox wget does not verify TLS certificates; use only for testing until APT is available.
