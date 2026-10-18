@@ -1,4 +1,5 @@
 #!/bin/sh
+cd "$(dirname "$0")"
 # Packs rootfs/ into an initramfs. Run from ~/LeanOS/userspace
 set -e
 cp init rootfs/init && chmod +x rootfs/init

@@ -1,11 +1,12 @@
 kernel/src/
-build/
-kernel/src/
 kernel/build/
+kernel/build.log
 userspace/busybox-*/
 userspace/rootfs/
 userspace/*.tar.bz2
 userspace/initramfs.cpio.gz
+userspace/overlay/etc/shadow
 iso/boot/bzImage
 iso/boot/initramfs.cpio.gz
 leanos.iso
+paused/
