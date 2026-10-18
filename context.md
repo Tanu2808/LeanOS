@@ -1,7 +1,7 @@
 # LeanOS context
 
 Last updated: 2026-10-17
-Status: Steps 1-4 complete (boots from a virtual disk). Next: package manager (APT).
+Status: Steps 1-5 complete. Debian 13 boots on our kernel with APT (53 MB idle). Next: security baseline.
 
 ## Project
 - New LeanOS project, separate from any earlier work.
@@ -61,3 +61,11 @@ Next: Step 5 (package management).
 - Disk workflow: build-initramfs.sh -> build-disk.sh (leanos.img) -> VBoxManage convertfromraw to leanos-disk.vdi, attached on the AHCI controller. VM: 1024 MB, EFI off, audio off, Intel PRO/1000 NIC, Hard Disk first in boot order.
 - Measured: VirtualBox 1024 MB VM, ext4 root on disk, init + login + DHCP: 16 MB used, 32 MB of disk used.
 - Normal users cannot poweroff (needs root); add sudo/doas later.
+
+## Step 5 result (Debian rootfs)
+- Main system is now a minimal Debian 13 (trixie) rootfs built by build-debian.sh (debootstrap, systemd, dbus, systemd-networkd/resolved, sudo). Root is locked; user leanos has sudo.
+- Disk: ROOTFS=debian-rootfs OUT=leanos-debian.img SIZE=4G ./build-disk.sh, then VBoxManage convertfromraw to leanos-debian.vdi.
+- Measured (1024 MB VM): 53 MB used, 92 MB cache; boot 5.5 s (2.4 s kernel + 3.2 s userspace). APT works.
+- debootstrap needs dbus in the package list; chroot calls need PATH=/usr/sbin:/usr/bin:/sbin:/bin.
+- The BusyBox system (userspace/, build-initramfs.sh, build-iso.sh) stays as a minimal reference variant.
+- Next: security baseline (firewall, automatic security updates, remove setuid shortcuts), trim kernel config, remove nomodeset, software catalogue, then the custom desktop.

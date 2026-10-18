@@ -1,21 +1,26 @@
 #!/bin/sh
-# Builds leanos.img (2 GB raw disk, ext4 root + GRUB). Run ./userspace/build-initramfs.sh first.
+# Builds a bootable raw disk image (ext4 root + GRUB).
+#   ROOTFS  directory to install   (default: userspace/rootfs, the BusyBox system)
+#   OUT     image file             (default: leanos.img)
+#   SIZE    image size             (default: 2G)
+# Debian: ROOTFS=debian-rootfs OUT=leanos-debian.img SIZE=4G ./build-disk.sh
 set -e
 cd "$(dirname "$0")"
-IMG=leanos.img
-rm -f "$IMG"
-truncate -s 2G "$IMG"
-echo 'start=2048, type=83, bootable' | sfdisk "$IMG" >/dev/null
-LOOP=$(sudo losetup -fP --show "$IMG")
+ROOTFS=${ROOTFS:-userspace/rootfs}
+OUT=${OUT:-leanos.img}
+SIZE=${SIZE:-2G}
+rm -f "$OUT"
+truncate -s "$SIZE" "$OUT"
+echo 'start=2048, type=83, bootable' | sfdisk "$OUT" >/dev/null
+LOOP=$(sudo losetup -fP --show "$OUT")
 cleanup() { sudo umount mnt 2>/dev/null || true; sudo losetup -d "$LOOP" 2>/dev/null || true; }
 trap cleanup EXIT
 sudo mkfs.ext4 -q -L leanos-root "${LOOP}p1"
 mkdir -p mnt
 sudo mount "${LOOP}p1" mnt
-# tar keeps ownership, device nodes and the setuid bit (chown would clear it)
-sudo tar -C userspace/rootfs --owner=0 --group=0 -cf - . | sudo tar -C mnt -xpf -
-sudo mkdir -p mnt/boot/grub mnt/home/leanos
-sudo chown 1000:1000 mnt/home/leanos
+sudo tar -C "$ROOTFS" --numeric-owner -cf - . | sudo tar -C mnt --numeric-owner -xpf -
+sudo mkdir -p mnt/boot/grub
+[ -d mnt/home/leanos ] || sudo mkdir -p mnt/home/leanos
 sudo cp kernel/build/arch/x86/boot/bzImage mnt/boot/bzImage
 sudo rm -f mnt/init
 sudo tee mnt/boot/grub/grub.cfg >/dev/null << 'CFG'
@@ -27,4 +32,4 @@ menuentry "LeanOS" {
 CFG
 sudo grub-install --target=i386-pc --boot-directory=mnt/boot "$LOOP"
 sync
-echo "Built $IMG"
+echo "Built $OUT"
