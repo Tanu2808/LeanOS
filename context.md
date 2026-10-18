@@ -1,7 +1,7 @@
 # LeanOS context
 
 Last updated: 2026-10-17
-Status: Steps 1-3 complete. Step 4 PAUSED.
+Status: Steps 1-3 complete. Step 4 in progress (4.1 done).
 
 ## Project
 - New LeanOS project, separate from any earlier work.
@@ -22,8 +22,8 @@ Status: Steps 1-3 complete. Step 4 PAUSED.
 - [x] Step 1: kernel fetched, configured, built (bzImage).
 - [x] Step 2: BusyBox initramfs, boots to a shell in QEMU.
 - [x] Step 3: bootable ISO, boots to a shell in VirtualBox.
-- [ ] Step 4 (PAUSED): real system.
-  - 4.1 BusyBox init + inittab + login + non-root user (draft in paused/step4-overlay, not committed)
+- [ ] Step 4 (IN PROGRESS): real system.
+  - [x] 4.1 BusyBox init + inittab + login + non-root user (userspace/overlay)
   - 4.2 networking (DHCP on VirtualBox NIC)
   - 4.3 users/permissions cleanup (replace test passwords)
   - 4.4 install to a virtual disk (persistent rootfs)
@@ -33,12 +33,13 @@ Status: Steps 1-3 complete. Step 4 PAUSED.
 - QEMU, 512 MB VM, bare kernel + BusyBox: 13 MB used, 449 MB free.
 - VirtualBox VM (1471 MB total), same image: 17 MB used, 1450 MB free.
 - Both are floors: no init, login, networking, audio or desktop yet.
+- VirtualBox, BusyBox init + getty/login + user: 18 MB used (login costs about 1 MB).
 
 ## Notes
 - grub.cfg currently has `nomodeset`. The earlier black screen was caused by a 32-bit VM, not the display driver, so test removing `nomodeset` later (the desktop needs the real display driver).
 - Kernel config is still the untrimmed defconfig (includes i915, e1000e, Wi-Fi, NFS, many Ethernet drivers). Trim later once the system is stable and RAM can be measured.
 - VM RAM setting should be 1024 MB (it was 1536 MB), to match the 1 GB design ceiling.
-- Test passwords in the paused Step 4 draft are throwaway and must be replaced before committing anything real.
+- Test passwords (root/leanos) are generated at build time into rootfs/etc/shadow (not committed). BusyBox is setuid root for su; tighten in the security pass.
 
 ## Commands
 ```bash
@@ -53,4 +54,4 @@ cd ~/LeanOS/userspace && ./build-initramfs.sh
 ```
 
 ## Resume point
-Resume at Step 4.1 (BusyBox init, inittab, login, non-root user). Draft files are in paused/step4-overlay.
+Next: Step 4.2 (networking, DHCP on the VirtualBox NIC).
