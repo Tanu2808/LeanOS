@@ -1,7 +1,7 @@
 # LeanOS context
 
 Last updated: 2026-10-17
-Status: Steps 1-5 complete. Debian 13 boots on our kernel with APT (53 MB idle). Next: security baseline.
+Status: Steps 1-7 done (lockout tested live). Next: kernel step (AppArmor, BPF, driver trim), one rebuild, catalogue.
 
 ## Project
 - New LeanOS project, separate from any earlier work.
@@ -69,3 +69,10 @@ Next: Step 5 (package management).
 - debootstrap needs dbus in the package list; chroot calls need PATH=/usr/sbin:/usr/bin:/sbin:/bin.
 - The BusyBox system (userspace/, build-initramfs.sh, build-iso.sh) stays as a minimal reference variant.
 - Next: security baseline (firewall, automatic security updates, remove setuid shortcuts), trim kernel config, remove nomodeset, software catalogue, then the custom desktop.
+
+## Step 7 result (login lockout)
+- pam_faillock: 5 failures lock the account for 5 minutes, then it unlocks by itself. Tested live in QEMU on a throwaway user; a correct login resets the counter.
+- common-auth order: preauth, pam_unix [success=1], authfail, authsucc, pam_deny, pam_permit. The authsucc line is required, because without it the success jump lands on pam_deny and all logins fail.
+- scripts/enable-faillock.sh applies it during build-debian.sh (verify after rebuild: grep faillock /etc/pam.d/common-auth).
+- Boot log findings: SELinux enabled with no policy (switch to AppArmor), BPF LSM and CGROUP_BPF missing, many unused drivers (sky2, e100, e1000e, 9p, NFS, netconsole, i915).
+- Testing uses QEMU in a terminal (copy/paste works): see the QEMU command above.

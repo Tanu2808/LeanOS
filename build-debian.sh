@@ -14,7 +14,7 @@ fi
 
 sudo rm -rf "$ROOT"
 sudo debootstrap --cache-dir="$PWD/.debcache" --variant=minbase \
-  --include=systemd-sysv,dbus,systemd-resolved,udev,sudo,iproute2,iputils-ping,ca-certificates,kmod,procps,nano,libpam-systemd \
+  --include=systemd-sysv,dbus,systemd-resolved,udev,sudo,iproute2,iputils-ping,ca-certificates,kmod,procps,nano,libpam-systemd,nftables,unattended-upgrades \
   trixie "$ROOT" "$MIRROR"
 
 # identity and mounts
@@ -38,5 +38,8 @@ sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin useradd -m -
 echo "leanos:$LEANOS_USER_PW" | sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin chpasswd
 sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin passwd -l root
 
+sudo cp -a debian-overlay/. "$ROOT/"
+sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin systemctl enable nftables
+sudo cp scripts/enable-faillock.sh "$ROOT/tmp/" && sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin sh /tmp/enable-faillock.sh && sudo rm -f "$ROOT/tmp/enable-faillock.sh"
 sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin apt-get clean
 echo "Debian rootfs ready: $ROOT ($(sudo du -sh "$ROOT" | cut -f1))"

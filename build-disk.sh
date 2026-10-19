@@ -18,7 +18,7 @@ trap cleanup EXIT
 sudo mkfs.ext4 -q -L leanos-root "${LOOP}p1"
 mkdir -p mnt
 sudo mount "${LOOP}p1" mnt
-sudo tar -C "$ROOTFS" --numeric-owner -cf - . | sudo tar -C mnt --numeric-owner -xpf -
+sudo tar -C "$ROOTFS" --numeric-owner --xattrs --xattrs-include="*" --acls -cf - . | sudo tar -C mnt --numeric-owner --xattrs --xattrs-include="*" --acls -xpf -
 sudo mkdir -p mnt/boot/grub
 [ -d mnt/home/leanos ] || sudo mkdir -p mnt/home/leanos
 sudo cp kernel/build/arch/x86/boot/bzImage mnt/boot/bzImage
@@ -27,6 +27,9 @@ sudo tee mnt/boot/grub/grub.cfg >/dev/null << 'CFG'
 set timeout=2
 set root=(hd0,msdos1)
 menuentry "LeanOS" {
+    linux /boot/bzImage root=/dev/sda1 rw console=tty0
+}
+menuentry "LeanOS (safe graphics)" {
     linux /boot/bzImage root=/dev/sda1 rw console=tty0 nomodeset
 }
 CFG
