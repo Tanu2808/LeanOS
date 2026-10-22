@@ -22,6 +22,7 @@ sudo tar -C "$ROOTFS" --numeric-owner --xattrs --xattrs-include="*" --acls -cf -
 sudo mkdir -p mnt/boot/grub
 [ -d mnt/home/leanos ] || sudo mkdir -p mnt/home/leanos
 sudo cp kernel/build/arch/x86/boot/bzImage mnt/boot/bzImage
+[ -f kernel/known-good/bzImage ] && sudo cp kernel/known-good/bzImage mnt/boot/bzImage.known-good
 sudo rm -f mnt/init
 sudo tee mnt/boot/grub/grub.cfg >/dev/null << 'CFG'
 set timeout=2
@@ -31,6 +32,9 @@ menuentry "LeanOS" {
 }
 menuentry "LeanOS (safe graphics)" {
     linux /boot/bzImage root=/dev/sda1 rw console=tty0 nomodeset
+}
+menuentry "LeanOS (previous kernel)" {
+    linux /boot/bzImage.known-good root=/dev/sda1 rw console=tty0
 }
 CFG
 sudo grub-install --target=i386-pc --boot-directory=mnt/boot "$LOOP"

@@ -1,0 +1,61 @@
+#!/bin/bash
+# leanos-selftest: checks LeanOS services, networking and security settings.
+# Default output: failures + summary. Use -v to list every check.
+[ "$(id -u)" = 0 ] || exec sudo "$0" "$@"
+V=0; [ "$1" = -v ] && V=1
+pass=0; fail=0; log=/tmp/selftest.txt; : > "$log"
+ok()  { pass=$((pass+1)); echo "PASS $1" >> "$log"; [ $V = 1 ] && echo "PASS $1"; return 0; }
+bad() { fail=$((fail+1)); echo "FAIL $1 ($2)" >> "$log"; echo "FAIL $1 ($2)"; return 0; }
+t()   { local n=$1; shift; local out; if out=$(bash -c "$*" 2>&1); then ok "$n"; else bad "$n" "$(echo "$out" | head -1 | cut -c1-60)"; fi; }
+
+for u in systemd-journald systemd-udevd systemd-logind systemd-networkd systemd-resolved dbus nftables apparmor getty@tty1; do
+  t "service $u active" "systemctl is-active --quiet $u"
+done
+for u in apt-daily.timer apt-daily-upgrade.timer dpkg-db-backup.timer; do
+  t "timer $u active" "systemctl is-active --quiet $u"
+done
+t "unattended-upgrades helper stays off" '! systemctl is-active --quiet unattended-upgrades'
+t "no failed units" '[ -z "$(systemctl --failed --no-legend)" ]'
+
+t "IPv4 address assigned" 'ip -4 -o addr show scope global | grep -q .'
+t "default route" 'ip route | grep -q ^default'
+t "gateway reachable" 'ping -c1 -W3 $(ip route | awk "/^default/{print \$3; exit}")'
+t "internet (ping 1.1.1.1)" 'ping -c1 -W3 1.1.1.1'
+t "DNS resolves" 'getent hosts deb.debian.org'
+t "apt update works" 'timeout 120 apt-get update -qq'
+t "unattended-upgrades dry run" 'timeout 120 unattended-upgrade --dry-run'
+
+t "firewall loaded (inet leanos)" 'nft list table inet leanos'
+t "firewall default-deny" 'nft list table inet leanos | grep -q "policy drop"'
+t "no service listens off-host" '! ss -Htln | awk "{print \$4}" | grep -v -E "^(127\.|\[::1\])" | grep -q .'
+
+t "AppArmor enabled" '[ "$(cat /sys/module/apparmor/parameters/enabled)" = Y ]'
+t "AppArmor profiles loaded" '[ "$(wc -l < /sys/kernel/security/apparmor/profiles)" -gt 0 ]'
+t "LSM list has apparmor" 'grep -q apparmor /sys/kernel/security/lsm'
+for kv in kernel.dmesg_restrict=1 kernel.kptr_restrict=2 net.core.bpf_jit_harden=2 net.ipv4.tcp_syncookies=1 net.ipv4.conf.all.rp_filter=1; do
+  t "sysctl $kv" "[ \"\$(sysctl -n ${kv%%=*})\" = ${kv##*=} ]"
+done
+t "sysctl ping_group_range" '[ "$(sysctl -n net.ipv4.ping_group_range | awk "{print \$1, \$2}")" = "0 2147483647" ]'
+t "unprivileged ping works" 'su leanos -c "ping -c1 -W3 127.0.0.1"'
+t "root account locked" 'passwd -S root | grep -q " L "'
+t "leanos is in sudo group" 'id -nG leanos | grep -qw sudo'
+t "lockout rules in PAM" '[ "$(grep -c pam_faillock /etc/pam.d/common-auth)" = 3 ] && grep -q pam_faillock /etc/pam.d/common-account'
+t "lockout config deny=5" 'grep -q "^deny = 5" /etc/security/faillock.conf'
+t "faillock tool runs" 'faillock --user leanos'
+
+t "/ and /etc owned by root" '[ "$(stat -c %U:%G / /etc | sort -u)" = root:root ]'
+leak=$(find / -xdev \( -uid 1000 -o -gid 1000 \) -not -path '/home/leanos*' 2>/dev/null | head -1)
+if [ -z "$leak" ]; then ok "no host-owned files outside /home/leanos"; else bad "host-owned files outside /home/leanos" "$leak"; fi
+t "locale resolves" '[ "$(cat /etc/default/locale)" = LANG=C.UTF-8 ]'
+t "no known boot warnings" '[ "$(journalctl -b -p warning --no-pager | grep -c -E "unsafe path|pam_env|bpf_jit_harden")" = 0 ]'
+t "login shell is bash" 'getent passwd leanos | grep -q /bin/bash'
+t "clock is sane" '[ "$(date +%Y)" -ge 2026 ]'
+used=$(free -m | awk '/Mem:/{print $3}')
+t "idle RAM under 700 MB (used ${used} MB)" "[ $used -lt 700 ]"
+
+echo "---"
+echo "environment : $(systemd-detect-virt)    root fs: $(findmnt -no FSTYPE /)    kernel: $(uname -r)"
+echo "boot time   : $(systemd-analyze | head -1 | sed 's/Startup finished in //')"
+echo "RAM used    : ${used} MB    running services: $(systemctl list-units --type=service --state=running --no-legend | wc -l)"
+echo "RESULT      : $pass passed, $fail failed    (full list: /tmp/selftest.txt)"
+[ $fail = 0 ]

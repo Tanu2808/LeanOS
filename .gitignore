@@ -21,3 +21,15 @@ mnt/
 debian-rootfs/
 *.img
 .debcache/
+kernel/known-good/
+live-stage/
+live-work/
+leanos-live-*.iso
+
+# Generated LeanOS build artifacts
+.iso-build/
+*.iso
+*.img
+*.qcow2
+*.raw
+*.ext4

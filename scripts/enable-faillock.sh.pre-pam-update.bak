@@ -1,0 +1,40 @@
+#!/bin/sh
+# Configure Debian PAM to record failed authentication and enforce faillock.conf.
+set -eu
+
+auth=/etc/pam.d/common-auth
+account=/etc/pam.d/common-account
+
+[ -f "$auth" ] && [ -f "$account" ] || {
+    echo "ERROR: expected Debian PAM files are missing." >&2
+    exit 1
+}
+
+# Avoid silently accepting a partially configured stack.
+if grep -q 'pam_faillock\.so' "$auth"; then
+    echo "ERROR: common-auth already contains faillock rules; refusing to modify it twice." >&2
+    exit 1
+fi
+
+# Insert the standard faillock sequence around pam_unix.
+if ! grep -qE '^auth[[:space:]]+\[success=1 default=ignore\][[:space:]]+pam_unix\.so' "$auth"; then
+    echo "ERROR: unexpected common-auth layout; refusing to modify it." >&2
+    exit 1
+fi
+
+sed -i \
+  '/^auth[[:space:]]*\[success=1 default=ignore\][[:space:]]*pam_unix\.so/i auth\trequired\tpam_faillock.so preauth' \
+  "$auth"
+
+sed -i \
+  '/^auth[[:space:]]*\[success=1 default=ignore\][[:space:]]*pam_unix\.so/a auth\t[default=die]\tpam_faillock.so authfail\nauth\tsufficient\tpam_faillock.so authsucc' \
+  "$auth"
+
+# Add the account-phase check once, before the fallback rules.
+if ! grep -q 'pam_faillock\.so' "$account"; then
+    sed -i \
+      '/^account[[:space:]]*requisite[[:space:]]*pam_deny\.so/i account required pam_faillock.so' \
+      "$account"
+fi
+
+echo "PAM faillock rules configured."

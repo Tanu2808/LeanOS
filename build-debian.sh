@@ -7,6 +7,7 @@ cd "$(dirname "$0")"
 ROOT=debian-rootfs
 MIRROR=${MIRROR:-http://deb.debian.org/debian}
 
+LEANOS_DEV=${LEANOS_DEV:-0}
 [ "$LEANOS_DEV" = 1 ] && LEANOS_USER_PW=${LEANOS_USER_PW:-leanos}
 if [ -z "$LEANOS_USER_PW" ]; then
   printf 'leanos user password: '; stty -echo; read LEANOS_USER_PW; stty echo; echo
@@ -14,7 +15,7 @@ fi
 
 sudo rm -rf "$ROOT"
 sudo debootstrap --cache-dir="$PWD/.debcache" --variant=minbase \
-  --include=systemd-sysv,dbus,systemd-resolved,udev,sudo,iproute2,iputils-ping,ca-certificates,kmod,procps,nano,libpam-systemd,nftables,unattended-upgrades \
+  --include=systemd-sysv,dbus,systemd-resolved,udev,sudo,iproute2,iputils-ping,ca-certificates,kmod,procps,nano,libpam-systemd,nftables,unattended-upgrades,apparmor \
   trixie "$ROOT" "$MIRROR"
 
 # identity and mounts
@@ -38,8 +39,11 @@ sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin useradd -m -
 echo "leanos:$LEANOS_USER_PW" | sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin chpasswd
 sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin passwd -l root
 
-sudo cp -a debian-overlay/. "$ROOT/"
 sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin systemctl enable nftables
 sudo cp scripts/enable-faillock.sh "$ROOT/tmp/" && sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin sh /tmp/enable-faillock.sh && sudo rm -f "$ROOT/tmp/enable-faillock.sh"
+sudo tar -C debian-overlay --owner=0 --group=0 --numeric-owner -cf - . | sudo tar -C "$ROOT" --no-overwrite-dir --numeric-owner -xf -
+sudo chown root:root "$ROOT"
+sudo sh scripts/check-ownership.sh "$ROOT"
+sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin systemctl disable unattended-upgrades.service
 sudo chroot "$ROOT" /usr/bin/env PATH=/usr/sbin:/usr/bin:/sbin:/bin apt-get clean
 echo "Debian rootfs ready: $ROOT ($(sudo du -sh "$ROOT" | cut -f1))"

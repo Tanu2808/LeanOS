@@ -76,3 +76,8 @@ Next: Step 5 (package management).
 - scripts/enable-faillock.sh applies it during build-debian.sh (verify after rebuild: grep faillock /etc/pam.d/common-auth).
 - Boot log findings: SELinux enabled with no policy (switch to AppArmor), BPF LSM and CGROUP_BPF missing, many unused drivers (sky2, e100, e1000e, 9p, NFS, netconsole, i915).
 - Testing uses QEMU in a terminal (copy/paste works): see the QEMU command above.
+
+## Self-test (2026-10-21)
+- /usr/local/bin/leanos-selftest (from debian-overlay) checks services, network, firewall, AppArmor, sysctl, PAM lockout, ownership and RAM.
+- QEMU + disk image (v2): 45/46; the single FAIL was a test bug (trailing-space comparison of ping_group_range), fixed in the overlay. Idle RAM 84 MB, boot 4.5 s, 9 services.
+- Pending: live ISO on QEMU and VirtualBox; persistence reboot check.
